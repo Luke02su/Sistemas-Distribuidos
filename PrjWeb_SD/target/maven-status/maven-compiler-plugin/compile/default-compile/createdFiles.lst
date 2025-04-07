@@ -1,0 +1,6 @@
+com\poo2\prjweb_sd\resources\JakartaEE10Resource.class
+com\sd\prjweb_sd\servlets\GerenciarDados.class
+com\poo2\prjweb_sd\servlets\Pet.class
+com\poo2\prjweb_sd\JakartaRestConfiguration.class
+com\poo2\prjweb_sd\servlets\BuscarArquivo.class
+com\poo2\prjweb_sd\servlets\GravarArquivo.class
