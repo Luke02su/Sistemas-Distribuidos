@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cadastro de Equipamento e Computador</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body class="container py-4">
+
+  <h2>Cadastro de Equipamento</h2>
+  <div class="mb-3">
+    <label for="numSerie" class="form-label">Número de Série</label>
+    <input type="text" class="form-control" id="numSerie" />
+  </div>
+  <div class="mb-3">
+    <label for="placa" class="form-label">Placa</label>
+    <input type="text" class="form-control" id="placa" />
+  </div>
+  <div class="mb-3">
+    <label for="tipo" class="form-label">Tipo</label>
+    <input type="text" class="form-control" id="tipo" />
+  </div>
+  <div class="mb-3">
+    <label for="modelo" class="form-label">Modelo</label>
+    <input type="text" class="form-control" id="modelo" />
+  </div>
+  <div class="mb-3">
+    <label for="localizacao" class="form-label">Localização Atual (ID Loja)</label>
+    <input type="number" class="form-control" id="localizacao" />
+  </div>
+  <div class="mb-3">
+    <label for="enviado" class="form-label">Enviado (true/false)</label>
+    <input type="text" class="form-control" id="enviado" />
+  </div>
+  <button class="btn btn-primary mb-4" onclick="salvarEquipamento()">Salvar Equipamento</button>
+
+  <hr />
+
+  <h2>Cadastro de Computador</h2>
+  <div class="mb-3">
+    <label for="fk_num_serie_comp" class="form-label">Número de Série do Equipamento (FK)</label>
+    <input type="text" class="form-control" id="fk_num_serie_comp" />
+  </div>
+  <div class="mb-3">
+    <label for="processador" class="form-label">Processador</label>
+    <input type="text" class="form-control" id="processador" />
+  </div>
+  <div class="mb-3">
+    <label for="memoria" class="form-label">Memória</label>
+    <input type="text" class="form-control" id="memoria" />
+  </div>
+  <div class="mb-3">
+    <label for="windows" class="form-label">Windows</label>
+    <input type="text" class="form-control" id="windows" />
+  </div>
+  <div class="mb-3">
+    <label for="armazenamento" class="form-label">Armazenamento</label>
+    <input type="text" class="form-control" id="armazenamento" />
+  </div>
+  <div class="mb-3">
+    <label for="formatacao" class="form-label">Formatação</label>
+    <input type="text" class="form-control" id="formatacao" />
+  </div>
+  <div class="mb-3">
+    <label for="manutencao" class="form-label">Manutenção</label>
+    <input type="text" class="form-control" id="manutencao" />
+  </div>
+  <button class="btn btn-success mb-4" onclick="salvarComputador()">Salvar Computador</button>
+
+  <hr />
+
+  <h2>Lista de Equipamentos</h2>
+  <div id="listaEquipamentos"></div>
+
+  <h2>Lista de Computadores</h2>
+  <div id="listaComputadores"></div>
+
+  <script>
+    // ATENÇÃO: Substitua PORTA_GESTOR pela porta correta do seu serviço gestor
+    const GESTOR_BASE_URL = "http://localhost:PORTA_GESTOR/gestor"; 
+    let editandoEquipamentoId = null; // Para controlar se estamos editando um equipamento
+
+    function limparFormularioEquipamento() {
+        document.getElementById("numSerie").value = "";
+        document.getElementById("numSerie").readOnly = false;
+        document.getElementById("placa").value = "";
+        document.getElementById("tipo").value = "";
+        document.getElementById("modelo").value = "";
+        document.getElementById("localizacao").value = "";
+        document.getElementById("enviado").value = "";
+        editandoEquipamentoId = null;
+    }
+
+    function salvarEquipamento() {
+      const numSerieVal = document.getElementById("numSerie").value;
+      const equipamentoData = {
+        placa: document.getElementById("placa").value,
+        tipo: document.getElementById("tipo").value,
+        modelo: document.getElementById("modelo").value,
+        localizacao_atual: parseInt(document.getElementById("localizacao").value),
+        // O campo 'enviado' precisa ser booleano se o backend esperar isso.
+        // Convertendo 'true'/'false' string para booleano.
+        enviado: document.getElementById("enviado").value.toLowerCase() === 'true', 
+      };
+
+      let method = "POST";
+      let url = `${GESTOR_BASE_URL}/equipamentos`;
+
+      if (editandoEquipamentoId) { // Se editandoEquipamentoId tem um valor, é uma atualização
+        method = "PUT";
+        url = `${GESTOR_BASE_URL}/equipamentos/${editandoEquipamentoId}`;
+        // Para PUT, não enviamos pk_num_serie no corpo se já está na URL
+      } else {
+        // Para POST (novo), incluímos pk_num_serie no corpo
+        equipamentoData.pk_num_serie = numSerieVal;
+      }
+      
+      // Nota: A lógica de PUT acima requer que o serviço gestor tenha um endpoint PUT /gestor/equipamentos/{id}
+      // Se o seu gestor SÓ tiver POST para salvar (criar), então a parte de PUT não funcionará como esperado.
+      // O código original sempre fazia POST. Se for para manter assim, remova a lógica de PUT.
+
+      const xhr = new XMLHttpRequest();
+      xhr.open(method, url, true);
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+          if (xhr.status === 200 || xhr.status === 201) {
+            alert(`Equipamento ${editandoEquipamentoId ? 'atualizado' : 'salvo'} com sucesso!`);
+            limparFormularioEquipamento();
+            listarEquipamentos();
+          } else {
+            alert(`Erro ao ${editandoEquipamentoId ? 'atualizar' : 'salvar'} equipamento: ${xhr.status} - ${xhr.responseText}`);
+          }
+        }
+      };
+      xhr.send(JSON.stringify(equipamentoData));
+    }
+
+    function editarEquipamento(pk_num_serie) {
+      const xhr = new XMLHttpRequest();
+      xhr.open("GET", `${GESTOR_BASE_URL}/equipamentos/${pk_num_serie}`, true);
+      xhr.onload = function () {
+      if (xhr.status === 200) {
+        const equipamento = JSON.parse(xhr.responseText);
+        document.getElementById("numSerie").value = equipamento.pk_num_serie;
+        document.getElementById("numSerie").readOnly = true; // Torna o campo ID read-only
+        document.getElementById("placa").value = equipamento.placa;
+        document.getElementById("tipo").value = equipamento.tipo;
+        document.getElementById("modelo").value = equipamento.modelo;
+        document.getElementById("localizacao").value = equipamento.localizacao_atual;
+        document.getElementById("enviado").value = equipamento.enviado;
+        
+        editandoEquipamentoId = equipamento.pk_num_serie; // Define que estamos editando
+        alert('Dados do equipamento carregados no formulário para edição!');
+      } else {
+        alert("Erro ao buscar dados do equipamento.");
+      }
+    };
+    xhr.send();
+    }
+
+    function excluirEquipamento(pk_num_serie) {
+      // O seu gestor espera o pk_num_serie no corpo da requisição DELETE
+      const equipamentoPayload = { pk_num_serie: pk_num_serie }; 
+
+      fetch(`${GESTOR_BASE_URL}/equipamentos`, { // URL base para DELETE com corpo
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(equipamentoPayload) 
+      })
+      .then(response => {
+        if (response.ok || response.status === 200 || response.status === 204) { // DELETE pode retornar 200, 204 ou ser apenas 'ok'
+          alert('Equipamento excluído com sucesso!');
+          listarEquipamentos();
+        } else {
+           response.text().then(text => alert('Erro ao excluir equipamento: ' + text));
+        }
+      })
+      .catch(error => {
+        console.error('Erro na requisição DELETE equipamento:', error);
+        alert('Erro na requisição ao excluir equipamento.');
+      });
+    }
+
+    function limparFormularioComputador() {
+        document.getElementById("fk_num_serie_comp").value = "";
+        document.getElementById("processador").value = "";
+        document.getElementById("memoria").value = "";
+        document.getElementById("windows").value = "";
+        document.getElementById("armazenamento").value = "";
+        document.getElementById("formatacao").value = "";
+        document.getElementById("manutencao").value = "";
+        // Se houver um ID de computador para edição, limpe-o também
+    }
+
+    function salvarComputador() {
+      const computador = {
+        // No seu gestor, o POST para computador espera o fk_num_serie no corpo
+        fk_num_serie: document.getElementById("fk_num_serie_comp").value,
+        processador: document.getElementById("processador").value,
+        memoria: document.getElementById("memoria").value,
+        windows: document.getElementById("windows").value,
+        armazenamento: document.getElementById("armazenamento").value,
+        formatacao: document.getElementById("formatacao").value,
+        manutencao: document.getElementById("manutencao").value,
+      };
+
+      // Nota: A função de salvar computador só faz POST (criar). 
+      // Para atualizar, seria necessário uma lógica similar à de equipamento (com PUT)
+      // e um endpoint PUT /gestor/computadores/{id_computador} no backend.
+      // O pk_computador precisaria ser gerenciado no formulário durante a edição.
+
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `${GESTOR_BASE_URL}/computadores`, true);
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+          if (xhr.status === 200 || xhr.status === 201) {
+            alert("Computador salvo com sucesso!");
+            limparFormularioComputador();
+            listarComputadores();
+          } else {
+            alert("Erro ao salvar computador: " + xhr.status + " - " + xhr.responseText);
+          }
+        }
+      };
+      xhr.send(JSON.stringify(computador));
+    }
+    
+    // A função editarComputador carrega os dados, mas o "Salvar Computador" ainda faz POST.
+    // Para um update real, o botão salvar precisaria de uma lógica para PUT e o backend precisaria do endpoint.
+    function editarComputador(pk_computador) { 
+      const xhr = new XMLHttpRequest();
+      // Assumindo que seu gestor tem GET /gestor/computadores/{pk_computador}
+      xhr.open("GET", `${GESTOR_BASE_URL}/computadores/${pk_computador}`, true); 
+      xhr.onload = function () {
+      if (xhr.status === 200) {
+        const computador = JSON.parse(xhr.responseText);
+        // Atenção aos nomes dos campos retornados pelo backend
+        document.getElementById("fk_num_serie_comp").value = computador.equipamento ? computador.equipamento.pk_num_serie : (computador.fk_num_serie || "");
+        document.getElementById("processador").value = computador.processador || ""; // Corrigido, antes era 'placa'
+        document.getElementById("memoria").value = computador.memoria || "";
+        document.getElementById("windows").value = computador.windows || "";
+        document.getElementById("armazenamento").value = computador.armazenamento || "";
+        document.getElementById("formatacao").value = computador.formatacao || "";
+        document.getElementById("manutencao").value = computador.manutencao || "";
+        
+        // Aqui você precisaria armazenar o 'pk_computador' se quisesse fazer um PUT
+        // e modificar a função 'salvarComputador' para lidar com isso.
+        alert('Dados do computador carregados no formulário. Para salvar alterações, o backend precisa suportar PUT e o JS ser ajustado.');
+      } else {
+        alert("Erro ao buscar dados do computador.");
+      }
+    };
+    xhr.send();
+    }
+
+    function excluirComputador(pk_computador) {
+      // O seu gestor espera o pk_computador (ou o identificador que ele usa) no corpo da requisição DELETE
+      const computadorPayload = { pk_computador: pk_computador }; // Verifique qual campo o gestor espera
+
+      fetch(`${GESTOR_BASE_URL}/computadores`, { // URL base para DELETE com corpo
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(computadorPayload) 
+      })
+      .then(response => {
+        if (response.ok || response.status === 200 || response.status === 204) {
+          alert('Computador excluído com sucesso!');
+          listarComputadores();
+        } else {
+          response.text().then(text => alert('Erro ao excluir computador: ' + text));
+        }
+      })
+      .catch(error => {
+        console.error('Erro na requisição DELETE computador:', error);
+         alert('Erro na requisição ao excluir computador.');
+      });
+    }
+
+    function listarEquipamentos() {
+      const xhr = new XMLHttpRequest();
+      xhr.open("GET", `${GESTOR_BASE_URL}/equipamentos`, true);
+      xhr.onload = function () {
+        if (xhr.status === 200) {
+          const equipamentos = JSON.parse(xhr.responseText);
+          exibirEquipamentos(equipamentos);
+        } else {
+          document.getElementById("listaEquipamentos").innerHTML = "<p>Erro ao carregar equipamentos.</p>";
+        }
+      };
+      xhr.send();
+    }
+
+    function exibirEquipamentos(equipamentos) {
+      let html = '<table class="table table-bordered"><thead><tr>';
+      html += `
+        <th>Número de Série</th>
+        <th>Placa</th>
+        <th>Tipo</th>
+        <th>Modelo</th>
+        <th>Localização</th>
+        <th>Enviado</th>
+        <th>Ações</th>
+      </tr></thead><tbody>`;
+
+      equipamentos.forEach(eq => {
+        html += `<tr>
+          <td>${eq.pk_num_serie}</td>
+          <td>${eq.placa || ""}</td>
+          <td>${eq.tipo}</td>
+          <td>${eq.modelo}</td>
+          <td>${eq.localizacao_atual}</td>
+          <td>${eq.enviado}</td>
+          <td>
+            <button class="btn btn-warning btn-sm me-1" onclick="editarEquipamento('${eq.pk_num_serie}')">Editar</button>
+            <button class="btn btn-danger btn-sm" onclick="excluirEquipamento('${eq.pk_num_serie}')">Excluir</button>
+          </td>
+        </tr>`;
+      });
+
+      html += "</tbody></table>";
+      document.getElementById("listaEquipamentos").innerHTML = html;
+    }
+
+    function listarComputadores() {
+      const xhr = new XMLHttpRequest();
+      xhr.open("GET", `${GESTOR_BASE_URL}/computadores`, true);
+      xhr.onload = function () {
+        if (xhr.status === 200) {
+          const computadores = JSON.parse(xhr.responseText);
+          exibirComputadores(computadores);
+        } else {
+           document.getElementById("listaComputadores").innerHTML = "<p>Erro ao carregar computadores.</p>";
+        }
+      };
+      xhr.send();
+    }
+
+    function exibirComputadores(computadores) {
+      let html = '<table class="table table-bordered"><thead><tr>';
+      html += `
+        <th>ID Computador</th>
+        <th>Num. Série Equip. (FK)</th>
+        <th>Processador</th>
+        <th>Memória</th>
+        <th>Windows</th>
+        <th>Armazenamento</th>
+        <th>Formatação</th>
+        <th>Manutenção</th>
+        <th>Ações</th>
+      </tr></thead><tbody>`;
+
+      computadores.forEach(comp => {
+        html += `<tr>
+          <td>${comp.pk_computador || ""}</td> 
+          <td>${comp.equipamento ? comp.equipamento.pk_num_serie : (comp.fk_num_serie || "")}</td>
+          <td>${comp.processador}</td>
+          <td>${comp.memoria}</td>
+          <td>${comp.windows}</td>
+          <td>${comp.armazenamento}</td>
+          <td>${comp.formatacao}</td>
+          <td>${comp.manutencao}</td>
+          <td>
+            <button class="btn btn-warning btn-sm me-1" onclick="editarComputador('${comp.pk_computador}')">Editar</button>
+            <button class="btn btn-danger btn-sm" onclick="excluirComputador('${comp.pk_computador}')">Excluir</button>
+          </td>
+        </tr>`;
+      });
+
+      html += "</tbody></table>";
+      document.getElementById("listaComputadores").innerHTML = html;
+    }
+
+    window.onload = function () {
+      listarEquipamentos();
+      listarComputadores();
+    };
+  </script>
+</body>
+</html>

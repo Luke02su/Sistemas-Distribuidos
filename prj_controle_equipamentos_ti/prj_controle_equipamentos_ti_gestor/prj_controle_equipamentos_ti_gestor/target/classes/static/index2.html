@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cadastro de Lojas e Envios</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body class="container py-4">
+
+  <h2>Cadastro de Loja</h2>
+  <div class="mb-3">
+    <label for="pk_loja" class="form-label">Número da loja</label>
+    <input type="number" class="form-control" id="pk_loja" />
+  </div>
+  <div class="mb-3">
+    <label for="cnpj" class="form-label">CNPJ</label>
+    <input type="text" class="form-control" id="cnpj" />
+  </div>
+  <div class="mb-3">
+    <label for="gerente" class="form-label">Gerente</label>
+    <input type="text" class="form-control" id="gerente" />
+  </div>
+  <div class="mb-3">
+    <label for="telefone" class="form-label">Telefone</label>
+    <input type="text" class="form-control" id="telefone" />
+  </div>
+  <div class="mb-3">
+    <label for="cidade" class="form-label">Cidade</label>
+    <input type="text" class="form-control" id="cidade" />
+  </div>
+  <button class="btn btn-primary mb-4" onclick="salvarLoja()">Salvar Loja</button>
+
+  <hr />
+
+  <h2 class="mb-4">Cadastro de Envio de Equipamento</h2>
+  <div class="mb-3">
+    <label for="envio_fk_num_serie" class="form-label">Número de Série do Equipamento (FK)</label>
+    <input type="text" class="form-control" id="envio_fk_num_serie" />
+  </div>
+  <div class="mb-3">
+    <label for="origem" class="form-label">Origem</label>
+    <input type="text" class="form-control" id="origem" />
+  </div>
+  <div class="mb-3">
+    <label for="envio_fk_loja" class="form-label">ID da Loja (FK)</label>
+    <input type="number" class="form-control" id="envio_fk_loja" />
+  </div>
+  <div class="mb-3">
+    <label for="motivo" class="form-label">Motivo</label>
+    <input type="text" class="form-control" id="motivo" />
+  </div>
+  <div class="mb-3">
+    <label for="data_envio" class="form-label">Data de Envio</label>
+    <input type="date" class="form-control" id="data_envio" />
+  </div>
+  <div class="mb-3">
+    <label for="usuario_envio" class="form-label">Usuário que Enviou</label>
+    <input type="text" class="form-control" id="usuario_envio" />
+  </div>
+  <button class="btn btn-primary mb-4" onclick="salvarEnvio()">Salvar Envio</button>
+
+  <hr />
+
+  <h2>Lista de Lojas</h2>
+  <div id="listaLojas"></div>
+
+  <h2>Lista de Envios</h2>
+  <div id="listaEnvios"></div>
+
+  <script>
+    // ATENÇÃO: Substitua PORTA_GESTOR pela porta correta do seu serviço gestor
+    const GESTOR_BASE_URL_SERVICO2_PREFIX = "http://localhost:PORTA_GESTOR/gestor"; 
+
+    const lojasBaseURL = `${GESTOR_BASE_URL_SERVICO2_PREFIX}/lojas`;
+    const enviosBaseURL = `${GESTOR_BASE_URL_SERVICO2_PREFIX}/envios`;
+
+    function salvarLoja() {
+      const pkLojaValue = document.getElementById("pk_loja").value.trim();
+      const loja = {
+        cnpj: document.getElementById("cnpj").value.trim(),
+        gerente: document.getElementById("gerente").value.trim(),
+        telefone: document.getElementById("telefone").value.trim(),
+        cidade: document.getElementById("cidade").value.trim()
+      };
+
+      if (!pkLojaValue) {
+        alert("O campo 'Número da loja' (ID) é obrigatório para salvar.");
+        return;
+      }
+      loja.pk_loja = parseInt(pkLojaValue);
+
+
+      // Verifica se loja já existe para decidir entre POST e PUT
+      // Esta lógica de checar primeiro com GET para decidir entre POST/PUT é específica.
+      // Se o seu backend gestor tiver um endpoint POST que cria e um PUT que atualiza por ID,
+      // e o POST falhar se o ID já existir (ou o PUT falhar se não existir),
+      // você poderia tentar um PUT e se falhar (ex: 404), tentar um POST.
+      // A abordagem atual de GET primeiro é válida.
+      fetch(`${lojasBaseURL}/${loja.pk_loja}`)
+        .then(res => {
+          let request;
+          if (res.ok) { // Loja existe → PUT (Atualizar)
+            request = fetch(`${lojasBaseURL}/${loja.pk_loja}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(loja)
+            });
+          } else { // Loja não existe (ou outro erro no GET) → POST (Criar)
+                   // Se o GET deu 404, é porque não existe, então POST.
+            if (res.status === 404) {
+                 // Se o ID é fornecido pelo usuário para um novo item, ele vai no corpo.
+                request = fetch(lojasBaseURL, { 
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(loja) 
+                });
+            } else {
+                // Outro erro no GET, não tentar POST/PUT
+                throw new Error(`Erro ao verificar loja: ${res.status}`);
+            }
+          }
+          return request;
+        })
+        .then(res => {
+          if (!res) return; // Caso de erro no GET que não seja 404
+          if (res.ok) {
+            alert("Loja salva com sucesso!");
+            limparFormularioLoja();
+            listarLojas();
+          } else {
+            res.json().then(data => alert("Erro ao salvar loja: " + (data.message || data.error || "Desconhecido")));
+          }
+        })
+        .catch(err => alert("Erro na requisição da loja: " + err.message));
+    }
+
+    function limparFormularioLoja() {
+      ["pk_loja", "cnpj", "gerente", "telefone", "cidade"].forEach(id => {
+        document.getElementById(id).value = "";
+      });
+    }
+
+    function listarLojas() {
+      fetch(lojasBaseURL)
+        .then(res => {
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            return res.json();
+        })
+        .then(lojas => {
+          let html = `<table class="table table-bordered"><thead><tr>
+            <th>ID</th><th>CNPJ</th><th>Gerente</th><th>Telefone</th><th>Cidade</th><th>Ações</th>
+          </tr></thead><tbody>`;
+
+          lojas.forEach(loja => {
+            html += `<tr>
+              <td>${loja.pk_loja}</td>
+              <td>${loja.cnpj || ""}</td>
+              <td>${loja.gerente || ""}</td>
+              <td>${loja.telefone || ""}</td>
+              <td>${loja.cidade || ""}</td>
+              <td>
+                <button class="btn btn-warning btn-sm me-1" onclick="editarLoja(${loja.pk_loja})">Editar</button>
+                <button class="btn btn-danger btn-sm" onclick="excluirLoja(${loja.pk_loja})">Excluir</button>
+              </td>
+            </tr>`;
+          });
+
+          html += "</tbody></table>";
+          document.getElementById("listaLojas").innerHTML = html;
+        })
+        .catch(err => {
+            console.error("Erro ao listar lojas:", err);
+            document.getElementById("listaLojas").innerHTML = "<p>Erro ao carregar lojas.</p>";
+        });
+    }
+
+    function editarLoja(pk_loja) {
+      fetch(`${lojasBaseURL}/${pk_loja}`)
+        .then(res => {
+          if (!res.ok) throw new Error("Loja não encontrada para edição");
+          return res.json();
+        })
+        .then(loja => {
+          document.getElementById("pk_loja").value = loja.pk_loja;
+          document.getElementById("cnpj").value = loja.cnpj || "";
+          document.getElementById("gerente").value = loja.gerente || "";
+          document.getElementById("telefone").value = loja.telefone || "";
+          document.getElementById("cidade").value = loja.cidade || "";
+          alert("Dados da loja carregados no formulário. Altere e clique em 'Salvar Loja' para atualizar.");
+        })
+        .catch(err => alert("Erro ao buscar dados da loja: " + err.message));
+    }
+
+   function excluirLoja(pk_loja) {
+      if (!confirm(`Confirma a exclusão da loja ID ${pk_loja}?`)) return;
+
+      fetch(`${lojasBaseURL}/${pk_loja}`, { method: "DELETE" })
+        .then(async (res) => {
+          if (res.ok || res.status === 200 || res.status === 204 ) { // Status 204 (No Content) também é sucesso para DELETE
+            alert("Loja excluída com sucesso!");
+            listarLojas();
+          } else {
+            try {
+                const data = await res.json();
+                alert("Erro ao excluir loja: " + (data.message || data.error || "Desconhecido") + " [HTTP " + res.status + "]");
+            } catch (e) { // Se não houver corpo JSON na resposta de erro
+                 alert("Erro ao excluir loja: [HTTP " + res.status + "] - " + res.statusText);
+            }
+          }
+        })
+        .catch(err => alert("Erro na requisição de exclusão da loja: " + err.message));
+    }
+
+    function salvarEnvio() {
+      const fkNumSerieEnvio = document.getElementById("envio_fk_num_serie").value.trim();
+      const envio = {
+        origem: document.getElementById("origem").value.trim(),
+        fk_loja: parseInt(document.getElementById("envio_fk_loja").value.trim()),
+        motivo: document.getElementById("motivo").value.trim(),
+        data_envio: document.getElementById("data_envio").value,
+        usuario_envio: document.getElementById("usuario_envio").value.trim()
+      };
+
+      if (!fkNumSerieEnvio || !envio.origem || isNaN(envio.fk_loja) || !envio.motivo || !envio.data_envio || !envio.usuario_envio) {
+        alert("Preencha todos os campos de envio corretamente.");
+        return;
+      }
+      // Adiciona fk_num_serie ao corpo do envio, pois é o identificador/FK principal
+      envio.fk_num_serie = fkNumSerieEnvio;
+
+
+      // fk_num_serie é usado como ID para verificar existência e para URL do PUT/DELETE
+      fetch(`${enviosBaseURL}/${fkNumSerieEnvio}`)
+        .then(res => {
+          let request;
+          if (res.ok) { // Envio existe → PUT (Atualizar)
+            request = fetch(`${enviosBaseURL}/${fkNumSerieEnvio}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(envio)
+            });
+          } else if (res.status === 404) { // Envio não existe → POST (Criar)
+            request = fetch(enviosBaseURL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(envio) // fk_num_serie vai no corpo para criação
+            });
+          } else {
+            throw new Error(`Erro ao verificar envio: ${res.status}`);
+          }
+          return request;
+        })
+        .then(res => {
+          if (!res) return;
+          if (res.ok) {
+            alert("Envio salvo com sucesso!");
+            limparFormularioEnvio();
+            listarEnvios();
+          } else {
+            return res.json().then(data => {
+              throw new Error(data.message || data.error || "Erro desconhecido ao salvar envio.");
+            });
+          }
+        })
+        .catch(err => alert("Erro na requisição do envio: " + err.message));
+    }
+
+    function limparFormularioEnvio() {
+      document.getElementById("envio_fk_num_serie").value = "";
+      document.getElementById("origem").value = "";
+      document.getElementById("envio_fk_loja").value = "";
+      document.getElementById("motivo").value = "";
+      document.getElementById("data_envio").value = "";
+      document.getElementById("usuario_envio").value = "";
+    }
+
+    function listarEnvios() {
+      fetch(enviosBaseURL)
+        .then(res => {
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            return res.json();
+        })
+        .then(envios => {
+          let html = `<table class="table table-bordered"><thead><tr>
+            <th>Num. Série Equip. (FK)</th><th>Origem</th><th>ID Loja (FK)</th><th>Motivo</th><th>Data Envio</th><th>Usuário</th><th>Ações</th>
+          </tr></thead><tbody>`;
+
+          envios.forEach(envio => {
+            html += `<tr>
+              <td>${envio.fk_num_serie}</td>
+              <td>${envio.origem || ""}</td>
+              <td>${envio.fk_loja}</td>
+              <td>${envio.motivo || ""}</td>
+              <td>${envio.data_envio}</td>
+              <td>${envio.usuario_envio || ""}</td>
+              <td>
+                <button class="btn btn-warning btn-sm me-1" onclick="editarEnvio('${envio.fk_num_serie}')">Editar</button>
+                <button class="btn btn-danger btn-sm" onclick="excluirEnvio('${envio.fk_num_serie}')">Excluir</button>
+              </td>
+            </tr>`;
+          });
+
+          html += "</tbody></table>";
+          document.getElementById("listaEnvios").innerHTML = html;
+        })
+        .catch(err => {
+            console.error("Erro ao listar envios:", err);
+            document.getElementById("listaEnvios").innerHTML = "<p>Erro ao carregar envios.</p>";
+        });
+    }
+
+    function editarEnvio(fk_num_serie) {
+      fetch(`${enviosBaseURL}/${fk_num_serie}`)
+        .then(res => {
+            if (!res.ok) throw new Error("Envio não encontrado para edição.");
+            return res.json();
+        })
+        .then(envio => {
+          document.getElementById("envio_fk_num_serie").value = envio.fk_num_serie;
+          document.getElementById("origem").value = envio.origem || "";
+          document.getElementById("envio_fk_loja").value = envio.fk_loja;
+          document.getElementById("motivo").value = envio.motivo || "";
+          document.getElementById("data_envio").value = envio.data_envio; // Assumindo que a data vem formatada corretamente (YYYY-MM-DD)
+          document.getElementById("usuario_envio").value = envio.usuario_envio || "";
+          
+          alert("Dados do envio carregados no formulário. Altere e clique em 'Salvar Envio' para atualizar.");
+        })
+        .catch(err => alert("Erro ao buscar dados do envio: " + err.message));
+    }
+
+    function excluirEnvio(fk_num_serie) {
+      if (!confirm(`Confirma a exclusão do envio para o equipamento ${fk_num_serie}?`)) return;
+
+      fetch(`${enviosBaseURL}/${fk_num_serie}`, { method: "DELETE" })
+        .then(async res => {
+          if (res.ok || res.status === 200 || res.status === 204) {
+            alert("Envio excluído com sucesso!");
+            listarEnvios();
+          } else {
+            try {
+                const data = await res.json();
+                alert("Erro ao excluir envio: " + (data.message || data.error || "Desconhecido") + " [HTTP " + res.status + "]");
+            } catch(e) {
+                 alert("Erro ao excluir envio: [HTTP " + res.status + "] - " + res.statusText);
+            }
+          }
+        })
+        .catch(err => alert("Erro na requisição de exclusão do envio: " + err.message));
+    }
+
+    window.onload = function () {
+        listarLojas();
+        listarEnvios();
+    };
+  </script>
+
+</body>
+</html>
