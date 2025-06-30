@@ -8,6 +8,7 @@ import java.util.Map;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
@@ -93,26 +94,34 @@ private RestTemplate restTemplate;
         restTemplate.postForEntity(url_serv2_lojas, request, String.class);
     }
 
-    public void listarLojas() {
-        String response = restTemplate.getForObject(url_serv2_lojas, String.class);
-        System.out.println(response);
+    public ResponseEntity<String> getLojas() {
+        return restTemplate.getForEntity(url_serv2_lojas, String.class);
     }
 
-    public void buscarLoja(int pkLoja) {
-        String url = url_serv2_lojas + "/" + pkLoja;
-        String response = restTemplate.getForObject(url, String.class);
-        System.out.println(response);
+    public ResponseEntity<String> buscarLoja(Long pk_loja) {
+        String url = url_serv2_lojas + "/" + pk_loja;
+        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+        return response;
     }
 
-    public void atualizarLoja(int pkLoja, String jsonLojaAtualizada) {
+    public ResponseEntity<String> atualizarLoja(Long pk_loja, String jsonLojaAtualizada) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> request = new HttpEntity<>(jsonLojaAtualizada, headers);
-        restTemplate.exchange(url_serv2_lojas + "/" + pkLoja, HttpMethod.PUT, request, String.class);
+        String url = url_serv2_lojas + "/" + pk_loja;
+        ResponseEntity<String> pythonResponse = restTemplate.exchange(
+            url,
+            HttpMethod.PUT,
+            request,
+            String.class 
+        );
+        return ResponseEntity.status(pythonResponse.getStatusCode()).body(pythonResponse.getBody());
     }
 
-    public void deletarLoja(int pkLoja) {
-        restTemplate.delete(url_serv2_lojas + "/" + pkLoja);
+    public ResponseEntity<Void> deletarLoja(Long pk_loja) {
+        System.out.println(url_serv2_lojas + "/" + pk_loja);
+        restTemplate.delete(url_serv2_lojas + "/" + pk_loja);
+        return ResponseEntity.noContent().build();
     }
 
     public void criarEnvio(String jsonEnvio) {
@@ -122,27 +131,36 @@ private RestTemplate restTemplate;
         restTemplate.postForEntity(url_serv2_envios, request, String.class);
     }
     
-    public void listarEnvios() {
-        String response = restTemplate.getForObject(url_serv2_envios, String.class);
-        System.out.println(response);
+    public ResponseEntity<String> getEnvios() {
+        return restTemplate.getForEntity(url_serv2_envios, String.class);
     }
     
-    public void buscarEnvio(String fkNumSerie) {
-        String url = url_serv2_envios + "/" + fkNumSerie;
-        String response = restTemplate.getForObject(url, String.class);
-        System.out.println(response);
+    public ResponseEntity<String> buscarEnvio(String fk_num_serie) {
+        String url = url_serv2_envios + "/" + fk_num_serie;
+        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+        return response;
     }
     
-    public void atualizarEnvio(String fkNumSerie, String jsonEnvioAtualizado) {
+    
+    public ResponseEntity<String> atualizarEnvio(String fk_num_serie, String jsonEnvioAtualizado) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> request = new HttpEntity<>(jsonEnvioAtualizado, headers);
-        restTemplate.exchange(url_serv2_envios + "/" + fkNumSerie, HttpMethod.PUT, request, String.class);
+        String url = url_serv2_envios + "/" + fk_num_serie;
+        ResponseEntity<String> pythonResponse = restTemplate.exchange(
+            url,
+            HttpMethod.PUT,
+            request,
+            String.class 
+        );
+        return ResponseEntity.status(pythonResponse.getStatusCode()).body(pythonResponse.getBody());
     }
-    
-    public void deletarEnvio(String fkNumSerie) {
-        restTemplate.delete(url_serv2_envios + "/" + fkNumSerie);
-    }    
+
+    public ResponseEntity<Void> deletarEnvio(String fk_num_serie) {
+        System.out.println(url_serv2_envios + "/" + fk_num_serie);
+        restTemplate.delete(url_serv2_envios + "/" + fk_num_serie);
+        return ResponseEntity.noContent().build();
+    }
 
     public List<Map<String, Object>> listarEquipamentosComDataDeEnvio() {
         try {

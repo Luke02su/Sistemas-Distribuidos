@@ -12,38 +12,32 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/gestor")
-@CrossOrigin(origins = "*")
 public class GestorController {
 
     @Autowired
     private SistemasService sistemasService;
 
-    @CrossOrigin(origins = "*")
     @GetMapping("/equipamentos/simples")
     public ResponseEntity<String> listarEquipamentos() {
         return sistemasService.getEquipamentos();
     }
 
-    @CrossOrigin(origins = "*")
     @GetMapping("/equipamentos")
     public ResponseEntity<List<Map<String, Object>>> listarEquipamentosComEnvio() {
         List<Map<String, Object>> equipamentos = sistemasService.listarEquipamentosComDataDeEnvio();
         return ResponseEntity.ok(equipamentos);
     }
 
-    @CrossOrigin(origins = "*")
     @GetMapping("/equipamentos/{pk_num_serie}")
     public ResponseEntity<String> getEquipamento(@PathVariable String pk_num_serie) {
         return sistemasService.getEquipamento(pk_num_serie);
     }    
     
-    @CrossOrigin(origins = "*")
     @PostMapping("/equipamentos")
     public ResponseEntity<String> criarEquipamento(@RequestBody String equipamentoJson) {
         return sistemasService.salvarEquipamento(equipamentoJson);
     }
 
-    @CrossOrigin(origins = "*")
     @DeleteMapping("/equipamentos")
     public ResponseEntity<Void> deletarEquipamento(@RequestBody String equipamentoJson) {
         sistemasService.deletarEquipamento(equipamentoJson);
@@ -51,13 +45,11 @@ public class GestorController {
     }
     
     // ----- COMPUTADORES -----
-    @CrossOrigin(origins = "*")
     @GetMapping("/computadores")
     public ResponseEntity<String> listarComputadores() {
         return sistemasService.getComputadores();
     }
 
-    @CrossOrigin(origins = "*")
     @GetMapping("/computadores/{pk_computador}")
     public ResponseEntity<String> getComputador(@PathVariable Long pk_computador) {
         return sistemasService.getComputador(pk_computador);
@@ -81,23 +73,23 @@ public class GestorController {
     }
 
     @GetMapping("/lojas")
-    public void listarLojas() {
-        sistemasService.listarLojas();
+    public ResponseEntity<String> listarLojas() {
+        return sistemasService.getLojas();
     }
 
-    @GetMapping("/lojas/{id}")
-    public void buscarLoja(@PathVariable("id") int id) {
-        sistemasService.buscarLoja(id);
+    @GetMapping("/lojas/{pk_loja}")
+    public ResponseEntity<String> buscarLoja(@PathVariable("pk_loja") Long pk_loja) {
+        return sistemasService.buscarLoja(pk_loja);
     }
 
-    @PutMapping("/lojas/{id}")
-    public void atualizarLoja(@PathVariable("id") int id, @RequestBody String lojaAtualizada) {
-        sistemasService.atualizarLoja(id, lojaAtualizada);
+    @PutMapping("/lojas/{pk_loja}")
+    public ResponseEntity<String> atualizarEnvio(@PathVariable("pk_loja") Long pk_loja, @RequestBody String lojaAtualizada) {
+        return sistemasService.atualizarLoja(pk_loja, lojaAtualizada);
     }
 
-    @DeleteMapping("/lojas/{id}")
-    public void deletarLoja(@PathVariable("id") int id) {
-        sistemasService.deletarLoja(id);
+    @DeleteMapping("/lojas/{pk_loja}")
+    public ResponseEntity<Void> deletarLoja(@PathVariable("pk_loja") Long pk_loja) {
+        return sistemasService.deletarLoja(pk_loja);
     }
 
     // ----- ENVIOS -----
@@ -107,22 +99,22 @@ public class GestorController {
     }
 
     @GetMapping("/envios")
-    public void listarEnvios() {
-        sistemasService.listarEnvios();
+    public ResponseEntity<String> listarEnvios() {
+        return sistemasService.getEnvios();
+    }
+    
+    @GetMapping("/envios/{fk_num_serie}")
+    public ResponseEntity<String> buscarEnvio(@PathVariable("fk_num_serie") String fk_num_serie) {
+        return sistemasService.buscarEnvio(fk_num_serie);
     }
 
-    @GetMapping("/envios/{fk}")
-    public void buscarEnvio(@PathVariable("fk") String fkNumSerie) {
-        sistemasService.buscarEnvio(fkNumSerie);
+    @PutMapping("/envios/{fk_num_serie}")
+    public ResponseEntity<String> atualizarEnvio(@PathVariable("fk_num_serie") String fk_num_serie, @RequestBody String envioAtualizado) {
+        return sistemasService.atualizarEnvio(fk_num_serie, envioAtualizado);
     }
 
-    @PutMapping("/envios/{fk}")
-    public void atualizarEnvio(@PathVariable("fk") String fkNumSerie, @RequestBody String envioAtualizado) {
-        sistemasService.atualizarEnvio(fkNumSerie, envioAtualizado);
-    }
-
-    @DeleteMapping("/envios/{fk}")
-    public void deletarEnvio(@PathVariable("fk") String fkNumSerie) {
-        sistemasService.deletarEnvio(fkNumSerie);
+    @DeleteMapping("/envios/{fk_num_serie}")
+    public ResponseEntity<Void> deletarEnvio(@PathVariable("fk_num_serie") String fk_num_serie) {
+        return sistemasService.deletarEnvio(fk_num_serie);
     }
 }

@@ -15,25 +15,25 @@ public class ComputadorController {
     @Autowired
     private ComputadorService computadorService;
 
-    @CrossOrigin(origins = "*")
+    //@CrossOrigin(origins = "*")
     @GetMapping
     public List<Computador> getComputadores() {
         return computadorService.getComputadores();
     }
 
-    @CrossOrigin(origins = "*")
+   // @CrossOrigin(origins = "*")
     @GetMapping("/{pk_computador}")
         public Computador getComputador(@PathVariable Long pk_computador) {
         return computadorService.getComputador(pk_computador);
     }
 
-    @CrossOrigin(origins = "*")
+    //@CrossOrigin(origins = "*")
     @PostMapping
     public Computador salvarComputador(@RequestBody ComputadorRecordDto computadorRecordDto) {
         return computadorService.salvarComputador(computadorRecordDto);
     }
 
-    @CrossOrigin(origins = "*")
+    //@CrossOrigin(origins = "*")
     @DeleteMapping
     public void deletarComputador(@RequestBody Computador computador) {
         computadorService.excluirComputador(computador);

@@ -122,8 +122,8 @@
   <div id="listaEnvios"></div>
 
   <script>
-    const baseURL = "http://localhost:5000/api/lojas";
-    const envioURL = "http://localhost:5000/api/envios";
+    const baseURL = "http://192.168.152.85:8090/gestor/lojas";
+    const envioURL = "http://192.168.152.85:8090/gestor/envios";
 
     function salvarLoja() {
       const loja = {
@@ -256,25 +256,23 @@
     return;
   }
 
-  // Primeiro, verifica se o envio já existe
+  // Verifica se já existe
   fetch(`${envioURL}/${fk_num_serie}`)
     .then(res => {
       if (res.ok) {
-        // Já existe → atualiza (PUT)
+        // Já existe → PUT
         return fetch(`${envioURL}/${fk_num_serie}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(envio)
         });
-      } else if (res.status === 404) {
-        // Não existe → cria novo (POST)
-        return fetch(`${envioURL}`, {
+      } else {
+        // Não existe → POST
+        return fetch(envioURL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(envio)
         });
-      } else {
-        throw new Error("Erro ao verificar existência do envio.");
       }
     })
     .then(res => {
@@ -283,13 +281,12 @@
         limparFormularioEnvio();
         listarEnvios();
       } else {
-        return res.json().then(data => {
-          throw new Error(data.error || "Erro desconhecido ao salvar envio.");
-        });
+        res.json().then(data => alert("Erro: " + (data.error || "Desconhecido")));
       }
     })
-    .catch(err => alert("Erro: " + err.message));
+    .catch(err => alert("Erro na requisição: " + err));
 }
+
 
 
 function limparFormularioEnvio() {
@@ -333,20 +330,25 @@ function limparFormularioEnvio() {
     }
 
     function editarEnvio(fk_num_serie) {
-      fetch(`${envioURL}/${fk_num_serie}`)
-        .then(res => res.json())
-        .then(envio => {
-          document.getElementById("fk_num_serie").value = envio.fk_num_serie;
-          document.getElementById("origem").value = envio.origem;
-          document.getElementById("fk_loja").value = envio.fk_loja;
-          document.getElementById("motivo").value = envio.motivo;
-          document.getElementById("data_envio").value = envio.data_envio;
-          document.getElementById("usuario_envio").value = envio.usuario_envio;
-          
-          alert("Altere os dados e clique em Salvar para atualizar.");
-        })
-        .catch(err => alert("Erro ao buscar envio: " + err));
-    }
+  fetch(`${envioURL}/${fk_num_serie}`)
+    .then(res => {
+      if (!res.ok) throw new Error("Envio não encontrado ou erro na requisição.");
+      return res.json();
+    })
+    .then(envio => {
+      console.log('Objeto envio recebido:', envio);
+
+      document.getElementById("fk_num_serie").value = envio.fk_num_serie || "";
+      document.getElementById("origem").value = envio.origem || "";
+      document.getElementById("fk_loja").value = envio.fk_loja || "";
+      document.getElementById("motivo").value = envio.motivo || "";
+      document.getElementById("data_envio").value = envio.data_envio || "";
+      document.getElementById("usuario_envio").value = envio.usuario_envio || "";
+
+      alert("Altere os dados e clique em Salvar para atualizar.");
+    })
+    .catch(err => alert("Erro ao buscar envio: " + err)); // Catch exato ao de loja
+}
 
     function excluirEnvio(fk_num_serie) {
       if (!confirm(`Confirma a exclusão do envio ${fk_num_serie}?`)) return;
@@ -366,9 +368,11 @@ function limparFormularioEnvio() {
         .catch(err => alert("Erro na requisição: " + err));
     }
 
-    // Carrega lista de lojas ao abrir a página
-    listarLojas();
-    listarEnvios();
+
+    window.onload = function () {
+      listarLojas();
+      listarEnvios();
+    }
   </script>
 
 </body>

@@ -1,5 +1,5 @@
 from flask import Flask
-from flask_cors import CORS
+# from flask_cors import CORS # <--- Comente ou remova esta linha
 from app.config import Config
 from app.database import mongo
 
@@ -8,7 +8,7 @@ def create_app():
     app.config.from_object(Config)
 
     mongo.init_app(app)
-    CORS(app)
+    # CORS(app) #
 
     from app.routes import api_bp
     from app.views import views_bp
